@@ -2,10 +2,10 @@
 #- Makes calls to the Riot API.
 
 import LoL
-import LoLSql
+import LoLDB
 from riotwatcher import RiotWatcher
 
-class LoLRequest():
+class Request():
 	
 	def __init__(self):
 		self.riot = RiotWatcher(LoL.API_KEY)
@@ -16,12 +16,8 @@ class LoLRequest():
 		
 	def retrievePlayerData(self, playerId):
 		if self._checkRequestStatus():
-			player = self.riot.get_summoner(name=playerId)
-			masteries = self.riot.get_mastery_pages([player['id', ])[str(player['id'])]
-			current_ranked_stats = self.riot.get_ranked_stats(player['id'])
-			previous_ranked_stats = self.riot.get_ranked_stats(player['id'], season=4)
-			
-	
-	def savePlayerData(self, playerId):
-		
-#LoLRequest().retrievePlayerData('Avengous')
+			player = {}
+			player['id'] = playerId
+			player['summoner'] = self.riot.get_summoner(name=playerId)
+			player['match_history'] = self.riot.get_match_history(player['summoner']['id'])
+			return player
