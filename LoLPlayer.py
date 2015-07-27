@@ -1,5 +1,6 @@
 #- This module will manage the player data structure.
 
+from time import sleep
 from LoLDB import Database as DB
 from LoLRequest import Request
 
@@ -23,11 +24,16 @@ class Player():
 	def create(self):
 		self.db.createPlayer(self.playerId)
 		
+	def close(self):
+		self.db._close()
+		
 	def update(self):
-		playerdata = self.riot.retrievePlayerData(self.playerId)
+		while True:
+			try:
+				playerdata = self.riot.retrievePlayerData(self.playerId)
+				break
+			except:
+				sleep(15)
 		for match in playerdata['match_history']['matches']:
 			self.db.addMatch(match.items())
-			
-			exit()
-			
-		
+		self.close()
