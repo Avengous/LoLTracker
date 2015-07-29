@@ -99,11 +99,13 @@ class Database():
 		#------------------------
 		skip_next = False
 		matches = player['match_history']['matches']
+		total_matches_added = 0
 		for matchData in matches:
 			if self.hasMatchRecord(matchData['matchId'], matchData['participantIdentities'][0]['player']['summonerName']):
 				pass
 			else:
 				data = []
+				total_matches_added += 1
 				for item in matchData:
 					if type(matchData[item]) is not list:
 						data.append({'field': item, 'value': matchData[item]})
@@ -127,6 +129,7 @@ class Database():
 										for subdictitem in matchData[item][0][subitem][dictitem]:
 											data.append({'field': '{}_{}'.format(dictitem.replace('Deltas', ''),subdictitem), 'value': matchData[item][0][subitem][dictitem][subdictitem]})
 				self._insert('matches', data)
+		return total_matches_added
 		
 	def getPlayerLastUpdated(self, playerId):
 		return self.db.execute("SELECT lastUpdated FROM players WHERE name=?", (playerId,))

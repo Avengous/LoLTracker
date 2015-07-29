@@ -18,4 +18,5 @@ class Player():
 		return self.db.getPlayerLastUpdated(self.playerId).fetchone()[0]
 		
 	def retrieveMatches(self, newPlayer=False):
-		self.db.addMatchHistory(self.playerId, newRecord=newPlayer)
+		return self.db.addMatchHistory(self.playerId, newRecord=newPlayer)
+		
