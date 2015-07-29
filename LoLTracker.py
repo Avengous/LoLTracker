@@ -11,7 +11,7 @@ try:
 except:
 	pass
 	
-while True
+while True:
 	for id in LoL.PLAYERIDS:
 		player = Player(id)
 		if not player.hasRecord():
