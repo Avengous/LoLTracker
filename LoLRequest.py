@@ -2,6 +2,7 @@
 
 import LoL
 from riotwatcher import RiotWatcher
+from time import sleep
 
 class Request():
 	
@@ -13,7 +14,9 @@ class Request():
 		return self.riot.can_make_request()
 		
 	def retrievePlayerData(self, playerId):
-		if self._checkRequestStatus():
+		while not self._checkRequestStatus():
+			sleep(2.6)
+		else:
 			player = {}
 			player['id'] = playerId
 			player['summoner'] = self.riot.get_summoner(name=playerId)

@@ -17,7 +17,6 @@ while True:
 		if not player.hasRecord():
 			print "[CREATE] {}".format(id)
 			player.retrieveMatches(newPlayer=True)
-		elif player.lastUpdated()/60 >= UPDATE_INTERVAL:
+		elif ((time()-player.lastUpdated())/60) >= UPDATE_INTERVAL:
 			print "[UPDATE] {}".format(id)
 			player.retrieveMatches()
-	sleep(15)
