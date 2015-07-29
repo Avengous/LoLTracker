@@ -53,128 +53,54 @@ class Database():
 			self.db.execute("INSERT INTO {0}({1}) VALUES({2})".format(table, key, value))
 		self._commit()
 	
+	def _execute(self, table, fields):
+		cmd = "CREATE TABLE `{0}` (`tid` INTEGER NOT NULL UNIQUE,{1}, PRIMARY KEY(tid))".format(table, fields)
+		self.db.execute(cmd)
+	
+	def _returnCompatField(self, type):
+		if type in [str, unicode]:
+			return 'text'
+		elif type in [int, long, bool]:
+			return 'int'
+		elif type in [float]:
+			return 'real'
+		else:
+			print 'Untracked Type:', type
+			return None
+	
 	def createDatabase(self):
-		self.db.execute('''CREATE TABLE matches
-						   ( date text,
-							 matchSummonerId int,
-							 queueType text,
-							 matchVersion text,
-							 platformId int, 
-							 season text,
-							 region text,
-							 matchId int,
-							 mapId int,
-							 matchCreation text,
-							 matchMode text,
-							 matchDuration int,
-							 matchType text,
-							 PRIMARY KEY(matchId)
-							 FOREIGN KEY(matchSummonerId) REFERENCES identities(summonerId)
-							)''')
-							
-		self.db.execute('''CREATE TABLE participants
-						   (date text, 
-							pMatchId int,
-							masteries text,
-							spell1Id int,
-							spell2Id int,
-							stats text,
-							participantId int,
-							runes text,
-							highestAchievedSeasonTier text,
-							championId int,
-							timeline text,
-							teamId int,
-							item1 text,
-							totalPlayerScore text,
-							unrealKills text,
-							goldPerMinDeltas text,
-							objectivePlayerScore text,
-							totalDamageDealt text,
-							magicDamageDealtToChampions text,
-							xpDiffPerMinDeltas text,
-							largestMultiKill text,
-							largestKillingSpree text,
-							creepsPerMinDeltas text,
-							quadraKills text,
-							magicDamageTaken text,
-							towerKills text,
-							totalTimeCrowdControlDealt text,
-							neutralMinionsKilledEnemyJungle text,
-							firstTowerAssist text,
-							winner text,
-							firstTowerKill text,
-							item2 text,
-							item3 text,
-							item0 text,
-							neutralMinionsKilledTeamJungle text,
-							item6 text,
-							wardsPlaced text,
-							item4 text,
-							item5 text,
-							minionsKilled text,
-							role text,
-							doubleKills text,
-							tripleKills text,
-							champLevel text,
-							goldEarned text,
-							trueDamageDealt text,
-							magicDamageDealt text,
-							kills text,
-							csDiffPerMinDeltas text,
-							largestCriticalStrike text,
-							firstInhibitorKill text,
-							trueDamageTaken text,
-							lane text,
-							firstBloodAssist text,
-							firstBloodKill text,
-							assists text,
-							deaths text,
-							neutralMinionsKilled text,
-							combatPlayerScore text,
-							visionWardsBoughtInGame text,
-							physicalDamageDealtToChampions text,
-							goldSpent text,
-							wardsKilled text,
-							trueDamageDealtToChampions text,
-							pentaKills text,
-							firstInhibitorAssist text,
-							damageTakenDiffPerMinDeltas text,
-							totalHeal text,
-							xpPerMinDeltas text,
-							physicalDamageDealt text,
-							sightWardsBoughtInGame text,
-							totalDamageDealtToChampions text,
-							totalUnitsHealed text,
-							inhibitorKills text,
-							totalScoreRank text,
-							totalDamageTaken text,
-							killingSprees text,
-							damageTakenPerMinDeltas text,
-							physicalDamageTaken text,
-							FOREIGN KEY(pMatchId) REFERENCES matches(matchId)
-							)''')
-							
-		self.db.execute('''CREATE TABLE identities
-						   ( date text,
-							 lastUpdated int,
-							 profileIcon text,
-							 summonerId int,
-							 matchHistoryUri text,
-							 summonerName text,
-							 participantId int,
-							 PRIMARY KEY(summonerId)
-							)''')
+		player = Request().retrievePlayerData(LoL.PLAYERIDS[0])
 		
-		self.db.execute('''CREATE TABLE users
-						   ( dateCreated int,
-							 lastUpdated int,
-							 playerId text,
-							 PRIMARY KEY(playerId)
-							)''')
+		fields = []
+		for item in player['summoner']:
+			fields.append('{} {}'.format(item, self._returnCompatField(type(player['summoner'][item]))))
+		self._execute('players', ','.join(fields))
 		
-		self._commit()
-		self._close()
+		fields = []
+		skip_next = False
+		matchData = player['match_history']['matches'][0]
+		for item in matchData:
+			if type(matchData[item]) is not list:
+				fields.append('{} {}'.format(item, self._returnCompatField(type(matchData[item]))))
+			else:
+				for subitem in matchData[item][0]:
+					if type(matchData[item][0][subitem]) is not list and type(matchData[item][0][subitem]) is not dict:
+						if not skip_next:
+							fields.append('{} {}'.format(subitem, self._returnCompatField(type(matchData[item][0][subitem]))))
+						if subitem == 'participantId':
+							skip_next = True
+					elif type(matchData[item][0][subitem]) is list:
+						#This adds fields for runes and masteries.
+						fields.append('{} {}'.format(subitem, 'text'))
+					elif type(matchData[item][0][subitem]) is dict:
+						#This adds fields for match stats and deltas.
+						for dictitem in matchData[item][0][subitem]:
+							if type(matchData[item][0][subitem][dictitem]) is not dict:
+								fields.append('{} {}'.format(dictitem, self._returnCompatField(type(matchData[item][0][subitem][dictitem]))))
+							elif type(matchData[item][0][subitem][dictitem]) is dict:
+								for subdictitem in matchData[item][0][subitem][dictitem]:
+									fields.append('{} {}'.format('{}{}'.format(dictitem,subdictitem), self._returnCompatField(type(matchData[item][0][subitem][dictitem][subdictitem]))))
+		self._execute('matches', ','.join(fields))
 	
 	def createPlayer(self, playerId):
 		dateCreated = int(time.time())
