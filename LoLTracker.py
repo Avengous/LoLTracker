@@ -4,22 +4,20 @@ from LoLPlayer import Player
 from LoLDB import Database as DB 
 from time import time,sleep
 
-CREATE_DATABASE = False
 UPDATE_INTERVAL = 60
 
-if CREATE_DATABASE:
+try:
 	DB().createDatabase()
-	exit()
+except:
+	pass
 	
-while True:
+while True
 	for id in LoL.PLAYERIDS:
 		player = Player(id)
-		if player.recordExists():
-			if (int(time())-player.lastUpdated())/60 >= UPDATE_INTERVAL:
-				print "[UPDATE] {}".format(id)
-				player.update()
-		else:
+		if not player.hasRecord():
 			print "[CREATE] {}".format(id)
-			player.create()
-			player.update()
-		sleep(15)
+			player.retrieveMatches(newPlayer=True)
+		elif player.lastUpdated()/60 >= UPDATE_INTERVAL:
+			print "[UPDATE] {}".format(id)
+			player.retrieveMatches()
+	sleep(15)

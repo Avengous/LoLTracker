@@ -1,8 +1,6 @@
-	
 #- Makes calls to the Riot API.
 
 import LoL
-import LoLDB
 from riotwatcher import RiotWatcher
 
 class Request():
