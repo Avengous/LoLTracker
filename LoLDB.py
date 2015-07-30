@@ -1,12 +1,13 @@
 import sqlite3
 import time
+import sys
 import LoL
 from LoLRequest import Request
 
 class Database():
 	
 	def __init__(self):
-		self.connection = sqlite3.connect('loltracker.db')
+		self.connection = sqlite3.connect(sys.path[0]+'\loltracker.db')
 		self.db = self.connection.cursor()
 	
 	def _commit(self):
@@ -16,8 +17,8 @@ class Database():
 		self.connection.close()
 	
 	def _createTable(self, table, fields):
-		cmd = "CREATE TABLE `{0}` (`tid` INTEGER NOT NULL UNIQUE,{1}, PRIMARY KEY(tid))".format(table, fields)
-		self.db.execute(cmd)
+		query = "CREATE TABLE `{0}` (`tid` INTEGER NOT NULL UNIQUE,{1}, PRIMARY KEY(tid))".format(table, fields)
+		self.db.execute(query)
 		self._commit()
 		
 	def _insert(self, table, data):
@@ -33,16 +34,16 @@ class Database():
 				values.append("'{}'".format(key['value']))
 			else:
 				values.append(str(key['value']))
-		cmd = "INSERT OR REPLACE INTO {0}({1}) VALUES({2})".format(table, ','.join(fields), ','.join(values))
-		self.db.execute(cmd)
+		query = "INSERT OR REPLACE INTO {0}({1}) VALUES({2})".format(table, ','.join(fields), ','.join(values))
+		self.db.execute(query)
 		self._commit()
 	
 	def _select(self, table, field, value):
 		return self.db.execute("SELECT * FROM {0} WHERE {1}=?".format(table, field), (value,))
 		
 	def _update(self, table, field, value, key):
-			cmd = "UPDATE {0} SET {1}={2} WHERE {3}=?".format(table, field, value, key.keys()[0])
-			self.db.execute(cmd, (key['name'],))
+			query = "UPDATE {0} SET {1}={2} WHERE {3}=?".format(table, field, value, key.keys()[0])
+			self.db.execute(query, (key['name'],))
 			self._commit()
 			
 	def _returnCompatField(self, type):
@@ -142,9 +143,22 @@ class Database():
 		return self.db.execute("SELECT lastUpdated FROM players WHERE name=?", (playerId,))
 	
 	def hasMatchRecord(self, matchId, playerName):
-		cmd = "SELECT matchId, summonerName FROM matches WHERE (matchId=? AND summonerName=?)"
-		record = self.db.execute(cmd, (matchId, playerName)).fetchone()
+		query = "SELECT matchId, summonerName FROM matches WHERE (matchId=? AND summonerName=?)"
+		record = self.db.execute(query, (matchId, playerName)).fetchone()
 		if record == None:
 			return False
 		else:
 			return True
+			
+	def getSummonerId(self, playerId):
+		query = "SELECT id FROM players WHERE name=?"
+		return self.db.execute(query, [playerId]).fetchone()[0]
+		
+	def getMatches(self, summonerId, hours=0):
+		if hours == 0:
+			query = "SELECT * FROM matches WHERE summonerId=?"
+			return self.db.execute(query, [summonerId]).fetchall()
+		else:
+			timeMax = ((int(time.time())/60/60)-hours)*60*60*1000
+			query = "SELECT * FROM matches WHERE (summonerId=? AND matchCreation >=?)"
+			return self.db.execute(query, [summonerId, timeMax]).fetchall()
