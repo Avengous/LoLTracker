@@ -75,11 +75,13 @@ class Database():
 			else:
 				for subitem in matchData[item][0]:
 					if type(matchData[item][0][subitem]) is not list and type(matchData[item][0][subitem]) is not dict:
-						if not skip_next:
-							fields.append('{} {}'.format(subitem, self._returnCompatField(type(matchData[item][0][subitem]))))
 						#Skips the duplicate participantId field returned from Riot API.
 						if subitem == 'participantId':
-							skip_next = True
+							if not skip_next:
+								fields.append('{} {}'.format(subitem, self._returnCompatField(type(matchData[item][0][subitem]))))
+								skip_next = True
+						else:
+							fields.append('{} {}'.format(subitem, self._returnCompatField(type(matchData[item][0][subitem]))))
 					elif type(matchData[item][0][subitem]) is list:
 						#This adds fields for runes and masteries.
 						fields.append('{} {}'.format(subitem, 'text'))
@@ -105,10 +107,10 @@ class Database():
 		else:
 			self._update('players', 'lastUpdated', str(int(time.time())), {'name':playerId})
 		#------------------------
-		skip_next = False
 		matches = player['match_history']['matches']
 		total_matches_added = 0
 		for matchData in matches:
+			skip_next = False
 			if self.hasMatchRecord(matchData['matchId'], matchData['participantIdentities'][0]['player']['summonerName']):
 				pass
 			else:
@@ -120,10 +122,12 @@ class Database():
 					else:
 						for subitem in matchData[item][0]:
 							if type(matchData[item][0][subitem]) is not list and type(matchData[item][0][subitem]) is not dict:
-								if not skip_next:
-									data.append({'field': subitem, 'value': matchData[item][0][subitem]})
 								if subitem == 'participantId':
-									skip_next = True
+									if not skip_next:
+										data.append({'field': subitem, 'value': matchData[item][0][subitem]})
+										skip_next = True
+								else:
+									data.append({'field': subitem, 'value': matchData[item][0][subitem]})
 							elif type(matchData[item][0][subitem]) is list:
 								#Placeholder for runes and masteries.
 								#data.append({'field': subitem, 'value': ''})
@@ -137,6 +141,7 @@ class Database():
 										for subdictitem in matchData[item][0][subitem][dictitem]:
 											data.append({'field': '{}_{}'.format(dictitem.replace('Deltas', ''),subdictitem), 'value': matchData[item][0][subitem][dictitem][subdictitem]})
 				self._insert('matches', data)
+						
 		return total_matches_added
 		
 	def getPlayerLastUpdated(self, playerId):
@@ -155,10 +160,20 @@ class Database():
 		return self.db.execute(query, [playerId]).fetchone()[0]
 		
 	def getMatches(self, summonerId, hours=0):
+		matches = []
 		if hours == 0:
 			query = "SELECT * FROM matches WHERE summonerId=?"
-			return self.db.execute(query, [summonerId]).fetchall()
+			matchesData = self.db.execute(query, [summonerId]).fetchall()
 		else:
 			timeMax = ((int(time.time())/60/60)-hours)*60*60*1000
 			query = "SELECT * FROM matches WHERE (summonerId=? AND matchCreation >=?)"
-			return self.db.execute(query, [summonerId, timeMax]).fetchall()
+			matchesData = self.db.execute(query, [summonerId, timeMax]).fetchall()
+		
+		for matchData in matchesData:
+			matchKey = {}
+			for i, field in enumerate(self.db.execute("PRAGMA table_info('matches')").fetchall()):
+				matchKey[field[1]] = matchData[i]
+			matches.append(matchKey)
+			
+		return matches
+		

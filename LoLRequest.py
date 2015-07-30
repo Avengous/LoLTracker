@@ -8,8 +8,15 @@ class Request():
 	
 	def __init__(self):
 		self.riot = RiotWatcher(LoL.API_KEY)
-		self.champion_list = self.riot.static_get_champion_list()
-		
+		self.champions = self._getChampions()
+	
+	def _getChampions(self):
+		champion_list = {}
+		champions = self.riot.static_get_champion_list()
+		for champion in champions['data']:
+			champion_list[champions['data'][champion]['id']] = champion
+		return champion_list
+			
 	def _checkRequestStatus(self):
 		return self.riot.can_make_request()
 		
