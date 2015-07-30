@@ -39,7 +39,12 @@ class Database():
 	
 	def _select(self, table, field, value):
 		return self.db.execute("SELECT * FROM {0} WHERE {1}=?".format(table, field), (value,))
-
+		
+	def _update(self, table, field, value, key):
+			cmd = "UPDATE {0} SET {1}={2} WHERE {3}=?".format(table, field, value, key.keys()[0])
+			self.db.execute(cmd, (key['name'],))
+			self._commit()
+			
 	def _returnCompatField(self, type):
 		if type in [str, unicode]:
 			return 'text'
@@ -96,6 +101,8 @@ class Database():
 			for item in player['summoner']:
 				data.append({'field': item, 'value': player['summoner'][item]})
 			self._insert('players', data) 
+		else:
+			self._update('players', 'lastUpdated', str(int(time.time())), {'name':playerId})
 		#------------------------
 		skip_next = False
 		matches = player['match_history']['matches']
