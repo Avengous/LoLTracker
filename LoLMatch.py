@@ -8,8 +8,12 @@ class Match():
 		k = float(self.stats['kills'])
 		d = float(self.stats['deaths'])
 		a = float(self.stats['assists'])
-		return round((k+a)/d, 2)
-	
+
+		try:
+			return round((k+a)/d, 2)
+		except:
+			return round(k+a, 2)
+
 	#Need to call from a database or cache to improve performance.
 	def champion(self):
 		return Request().champions[self.stats['championId']]
